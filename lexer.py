@@ -7,7 +7,7 @@ PALABRAS_RESERVADAS = {
     "segun","caso","defecto","final_segun",
     "mientras","final_mientras","repetir","final_repetir",
     "hacer","hasta",
-    "funcion","retorno","fin_funcion",
+    "funcion","retorno","final_funcion",
     "verdadero","falso","y","o","no"
 }
 
