@@ -1,67 +1,46 @@
 import re
 from dataclasses import dataclass
 
-PALABRAS_RESERVADAS = {
-    "definir","asignar","entero","decimal","texto","booleano","nulo",
-    "mostrar","pedir","si","entonces","si_no","final_si",
-    "segun","caso","defecto","final_segun",
-    "mientras","final_mientras","repetir","final_repetir",
-    "hacer","hasta",
-    "funcion","retorno","final_funcion",
-    "verdadero","falso","y","o","no"
+palabrasReserv = {"definir","asignar","entero","decimal","texto","booleano","nulo","mostrar","pedir","si","entonces","si_no","final_si",
+    "segun","caso","defecto","final_segun","mientras","final_mientras","repetir","final_repetir","hacer","hasta",
+    "funcion","retorno","final_funcion","verdadero","falso","y","o","no"
 }
 
-TOKENS_RESERVADOS = {palabra: f"TOKEN_{palabra.upper()}" for palabra in PALABRAS_RESERVADAS}
+tokensReserv = {palabra: f"TOKEN_{palabra.upper()}" for palabra in palabrasReserv}
 
-OPERADORES = {
-    "==": "TOKEN_IGUALDAD",
-    "!=": "TOKEN_DIFERENTE",
-    "<=": "TOKEN_MENOR_IGUAL",
-    ">=": "TOKEN_MAYOR_IGUAL",
-    "=": "TOKEN_IGUAL_ASIG",
-    "+": "TOKEN_SUMA",
-    "-": "TOKEN_RESTA",
-    "*": "TOKEN_MULT",
-    "/": "TOKEN_DIV",
-    "%": "TOKEN_MOD",
-    "<": "TOKEN_MENOR",
-    ">": "TOKEN_MAYOR",
+operadores = {"==": "TOKEN_IGUALDAD","!=": "TOKEN_DIFERENTE","<=": "TOKEN_MENOR_IGUAL",">=": "TOKEN_MAYOR_IGUAL",
+    "=": "TOKEN_IGUAL_ASIG","+": "TOKEN_SUMA","-": "TOKEN_RESTA","*": "TOKEN_MULT","/": "TOKEN_DIV","%": "TOKEN_MOD","<": "TOKEN_MENOR",
+    ">": "TOKEN_MAYOR"
 }
 
-SIMBOLOS = {
-    "(": "T_PARENTESIS_ABRE",
-    ")": "T_PARENTESIS_CIERRE",
-    ";": "T_PUNTO_COMA",
-    ":": "T_DOS_PUNTOS",
-}
+simbolos = {"(": "T_PARENTESIS_ABRE",")": "T_PARENTESIS_CIERRE",";": "T_PUNTO_COMA",":": "T_DOS_PUNTOS"}
 
-IDENT = r"[a-z][a-z0-9]*"
+ident = r"[a-z][a-z0-9]*"
 
-REGEX_DECLARACION = re.compile(
-    rf"^definir\s+(entero|decimal|texto|booleano|nulo)\s+{IDENT}\s*=?\s*(\d+(\.\d+)?|\"[^\"]*\"|verdadero|falso|nulo)*\s*;$"
+regexDec = re.compile(
+    rf"^definir\s+(entero|decimal|texto|booleano|nulo)\s+{ident}\s*=?\s*(\d+(\.\d+)?|\"[^\"]*\"|verdadero|falso|nulo)*\s*;$"
 )
 
-REGEX_ASIGNACION = re.compile(
-    rf"^asignar\s+{IDENT}\s*=\s*({IDENT}|\d+(\.\d+)?|\"[^\"]*\"|verdadero|falso|null)(\s*[\+\-\*/]\s*({IDENT}|\d+(\.\d+)?))*\s*;$"
+regexAsig = re.compile(
+    rf"^asignar\s+{ident}\s*=\s*({ident}|\d+(\.\d+)?|\"[^\"]*\"|verdadero|falso|null)(\s*[\+\-\*/]\s*({ident}|\d+(\.\d+)?))*\s*;$"
 )
 
-REGEX_VALOR = re.compile(r'^(\d+|\d+\.\d+|"[^"]*"|verdadero|falso|nulo)$')
+regexValor = re.compile(r'^(\d+|\d+\.\d+|"[^"]*"|verdadero|falso|nulo)$')
 
-REGEX_MOSTRAR = re.compile(r"^mostrar\s*\((.*)\)\s*;$")
-REGEX_PEDIR = re.compile(rf"^pedir\s*\({IDENT}\)\s*;$")
+regexMostrar = re.compile(r"^mostrar\s*\((.*)\)\s*;$")
+regexPedir = re.compile(rf"^pedir\s*\({ident}\)\s*;$")
+regexSi = re.compile(r"^si\s*\([^()]+\)\s*entonces\s*([\s\S]*?)(\s*si_no\s*[\s\S]*?)?\s*final_si$")
+regexSegun = re.compile(r"^segun\s*\([^()]+\)\s*(\s*caso\s+[^:]+:\s*[\s\S]*?;)+(\s*defecto:\s*[\s\S]*?;)?\s*final_segun$")
 
-REGEX_SI = re.compile(r"^si\s*\([^()]+\)\s*entonces\s*([\s\S]*?)(\s*si_no\s*[\s\S]*?)?\s*final_si$")
-REGEX_SEGUN = re.compile(r"^segun\s*\([^()]+\)\s*(\s*caso\s+[^:]+:\s*[\s\S]*?;)+(\s*defecto:\s*[\s\S]*?;)?\s*final_segun$")
+regexMientras = re.compile(r"^mientras\s*\([^()]+\)\s*([\s\S]*?)\s*final_mientras\s*$")
+regexRepetir = re.compile(r"^repetir\s*\([^,]+,[^,]+,[^,]+\)\s*([\s\S]*?)\s*final_repetir$")
+regexHacer = re.compile(r"^hacer\s*([\s\S]*?)\s*hasta\s*\([^()]+\)\s*;$")
 
-REGEX_MIENTRAS = re.compile(r"^mientras\s*\([^()]+\)\s*([\s\S]*?)\s*final_mientras\s*$")
-REGEX_REPETIR = re.compile(r"^repetir\s*\([^,]+,[^,]+,[^,]+\)\s*([\s\S]*?)\s*final_repetir$")
-REGEX_HACER = re.compile(r"^hacer\s*([\s\S]*?)\s*hasta\s*\([^()]+\)\s*;$")
-
-REGEX_FUNCION = re.compile(
-    rf"^funcion\s+{IDENT}\s*\([^()]*\)\s*([\s\S]*?)\s*retorno\s+.*;\s*final_funcion$"
+regexFuncion = re.compile(
+    rf"^funcion\s+{ident}\s*\([^()]*\)\s*([\s\S]*?)\s*retorno\s+.*;\s*final_funcion$"
 )
 
-PATRON_TOKEN = re.compile(r"""
+patronToken = re.compile(r"""
     (?P<COMENTARIO>//[^\n]*|\#[^\n]*)
     |(?P<TEXTO>"[^"\n]*")
     |(?P<DECIMAL>\d+\.\d+)
@@ -95,26 +74,16 @@ def validar_linea(linea):
     if not linea:
         return True
 
-    palabras_bloque = {
-        "si", "si_no", "final_si",
-        "segun", "caso", "defecto", "final_segun",
-        "mientras", "final_mientras",
-        "repetir", "final_repetir",
-        "hacer", "hasta",
-        "funcion", "retorno", "final_funcion"
+    palabrasBloque = {"si", "si_no", "final_si","segun", "caso", "defecto", "final_segun","mientras", "final_mientras",
+        "repetir", "final_repetir","hacer", "hasta","funcion", "retorno", "final_funcion"
     }
 
     primera = linea.split()[0]
 
-    if primera in palabras_bloque:
+    if primera in palabrasBloque:
         return True
 
-    patrones = [
-        REGEX_DECLARACION,
-        REGEX_ASIGNACION,
-        REGEX_MOSTRAR,
-        REGEX_PEDIR
-    ]
+    patrones = [regexDec,regexAsig,regexMostrar,regexPedir]
 
     return any(p.fullmatch(linea) for p in patrones)
 
@@ -139,7 +108,7 @@ def analizador_lexico(codigo):
 
     linea_actual = 1
 
-    for match in PATRON_TOKEN.finditer(codigo):
+    for match in patronToken.finditer(codigo):
         tipo = match.lastgroup
         lexema = match.group()
 
@@ -156,8 +125,8 @@ def analizador_lexico(codigo):
             continue
 
         if tipo in ("IDENTIFICADOR", "RESERVADA_COMPUESTA"):
-            if lexema in PALABRAS_RESERVADAS:
-                token = TOKENS_RESERVADOS[lexema]
+            if lexema in palabrasReserv:
+                token = tokensReserv[lexema]
                 tipo_desc = "Reservada"
             else:
                 token = "TOKEN_ID"
@@ -176,11 +145,11 @@ def analizador_lexico(codigo):
             tipo_desc = "Texto"
 
         elif tipo == "OPERADOR":
-            token = OPERADORES.get(lexema, "TOKEN_OP")
+            token = operadores.get(lexema, "TOKEN_OP")
             tipo_desc = "Operador"
 
         elif tipo == "SIMBOLO":
-            token = SIMBOLOS.get(lexema, "TOKEN_SIM")
+            token = simbolos.get(lexema, "TOKEN_SIM")
             tipo_desc = "Simbolo"
 
         else:

@@ -1,0 +1,13 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Entornos virtuales (por si usas)
+venv/
+.env/
+
+# VS Code (opcional)
+.vscode/
+
+# Archivos del sistema
+.DS_Store
