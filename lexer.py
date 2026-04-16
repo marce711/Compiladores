@@ -99,11 +99,9 @@ def analizador_lexico(codigo):
         if not linea.strip():
             linea_actual += 1
             continue
-
         if not validar_linea(linea):
             errores.append(Error(e, f"Estructura invalida: {linea}", linea_actual))
             e += 1
-
         linea_actual += 1
 
     linea_actual = 1
@@ -115,15 +113,12 @@ def analizador_lexico(codigo):
         if tipo == "SALTO":
             linea_actual += 1
             continue
-
         if tipo in ("ESPACIO", "COMENTARIO"):
             continue
-
         if tipo == "DESCONOCIDO":
             errores.append(Error(e, f"Caracter invalido: {lexema}", linea_actual))
             e += 1
             continue
-
         if tipo in ("IDENTIFICADOR", "RESERVADA_COMPUESTA"):
             if lexema in palabrasReserv:
                 token = tokensReserv[lexema]
@@ -131,15 +126,12 @@ def analizador_lexico(codigo):
             else:
                 token = "TOKEN_ID"
                 tipo_desc = "Identificador"
-
         elif tipo == "ENTERO":
             token = "TOKEN_NUM"
             tipo_desc = "Numero"
-
         elif tipo == "DECIMAL":
             token = "TOKEN_DECIMAL"
             tipo_desc = "Decimal"
-
         elif tipo == "TEXTO":
             token = "TOKEN_TEXTO"
             tipo_desc = "Texto"
@@ -147,7 +139,6 @@ def analizador_lexico(codigo):
         elif tipo == "OPERADOR":
             token = operadores.get(lexema, "TOKEN_OP")
             tipo_desc = "Operador"
-
         elif tipo == "SIMBOLO":
             token = simbolos.get(lexema, "TOKEN_SIM")
             tipo_desc = "Simbolo"

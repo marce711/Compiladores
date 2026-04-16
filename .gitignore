@@ -2,11 +2,11 @@
 __pycache__/
 *.pyc
 
-# Entornos virtuales (por si usas)
+# Entornos virtuales
 venv/
 .env/
 
-# VS Code (opcional)
+# VS Code
 .vscode/
 
 # Archivos del sistema
