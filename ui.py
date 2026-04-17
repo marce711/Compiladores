@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk
 from lexer import analizador_lexico, tabla_simbolos
 
 class App:
