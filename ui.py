@@ -16,7 +16,6 @@ class App:
         style = ttk.Style()
         style.theme_use("clam")
 
-        # 🎨 Colores
         self.morado = "#6D28D9"
         self.celeste = "#38BDF8"
         self.blanco = "#FFFFFF"
@@ -48,10 +47,8 @@ class App:
                         foreground="white")
 
     def construir_ui(self):
-        # 🔹 TÍTULO
         ttk.Label(self.root, text="CodeFlow Studio", style="Title.TLabel").pack(pady=10)
 
-        # 🔹 EDITOR
         frame_editor = ttk.Frame(self.root)
         frame_editor.pack(fill="x", padx=20)
 
@@ -65,7 +62,6 @@ class App:
         )
         self.editor.pack(fill="x")
 
-        # 🔹 BOTONES
         frame_botones = ttk.Frame(self.root)
         frame_botones.pack(pady=10)
 
@@ -79,11 +75,9 @@ class App:
                   font=("Segoe UI", 10, "bold"),
                   command=self.limpiar).pack(side="left", padx=10)
 
-        # 🔹 CONTENEDOR TABLAS
         frame_tablas = ttk.Frame(self.root)
         frame_tablas.pack(fill="both", expand=True, padx=20, pady=10)
 
-        # 🔹 TABLA TOKENS
         frame_tokens = ttk.Frame(frame_tablas)
         frame_tokens.pack(side="left", fill="both", expand=True, padx=10)
 
@@ -103,7 +97,6 @@ class App:
 
         self.tabla_tokens.pack(fill="both", expand=True)
 
-        # 🔹 TABLA ERRORES
         frame_errores = ttk.Frame(frame_tablas)
         frame_errores.pack(side="right", fill="both", expand=True, padx=10)
 
@@ -152,8 +145,3 @@ class App:
             self.tabla_errores.insert("", tk.END, values=(
                 e.numero, e.descripcion, e.linea
             ))
-
-        if errores:
-            messagebox.showwarning("CodeFlow", "Se encontraron errores léxicos")
-        else:
-            messagebox.showinfo("CodeFlow", "Análisis exitoso")

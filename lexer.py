@@ -20,38 +20,34 @@ ident = r"[a-z][a-z0-9]*"
 regexDec = re.compile(
     rf"^definir\s+(entero|decimal|texto|booleano|nulo)\s+{ident}\s*=?\s*(\d+(\.\d+)?|\"[^\"]*\"|verdadero|falso|nulo)*\s*;$"
 )
-
 regexAsig = re.compile(
     rf"^asignar\s+{ident}\s*=\s*({ident}|\d+(\.\d+)?|\"[^\"]*\"|verdadero|falso|null)(\s*[\+\-\*/]\s*({ident}|\d+(\.\d+)?))*\s*;$"
 )
 
 regexValor = re.compile(r'^(\d+|\d+\.\d+|"[^"]*"|verdadero|falso|nulo)$')
-
-regexMostrar = re.compile(r"^mostrar\s*\((.*)\)\s*;$")
+regexMostrar = re.compile(r"^mostrar\s*\([^()]+\)\s*;$")
 regexPedir = re.compile(rf"^pedir\s*\({ident}\)\s*;$")
-regexSi = re.compile(r"^si\s*\([^()]+\)\s*entonces\s*([\s\S]*?)(\s*si_no\s*[\s\S]*?)?\s*final_si$")
-regexSegun = re.compile(r"^segun\s*\([^()]+\)\s*(\s*caso\s+[^:]+:\s*[\s\S]*?;)+(\s*defecto:\s*[\s\S]*?;)?\s*final_segun$")
+regexFuncion = re.compile(rf"^funcion\s+{ident}\s*\([^()]*\)\s*([\s\S]*?)\s*retorno\s+.*;\s*final_funcion$")
+regexLineaSi = re.compile(r"^si\s*\([^()]+\)\s*entonces\s*$")
+regexLineaSiNo = re.compile(r"^si_no\s*$")
+regexLineaFinalSi = re.compile(r"^final_si\s*$")
+regexLineaSegun = re.compile(r"^segun\s*\([^()]+\)\s*$")
+regexLineaCaso = re.compile(r"^caso\s+.+:\s*$")
+regexLineaDefecto = re.compile(r"^defecto:\s*$")
+regexLineaFinalSegun = re.compile(r"^final_segun\s*$")
+regexLineaMientras = re.compile(r"^mientras\s*\([^()]+\)\s*$")
+regexLineaFinalMientras = re.compile(r"^final_mientras\s*$")
+regexLineaRepetir = re.compile(r"^repetir\s*\([^,]+,\s*[^,]+,\s*[^,]+\)\s*$")
+regexLineaFinalRepetir = re.compile(r"^final_repetir\s*$")
+regexLineaHacer = re.compile(r"^hacer\s*$")
+regexLineaHasta = re.compile(r"^hasta\s*\([^()]+\)\s*;\s*$")
+regexLineaFuncion = re.compile(rf"^funcion\s+{ident}\s*\([^()]*\)\s*$")
+regexLineaRetorno = re.compile(r"^retorno\s+.+;\s*$")
+regexLineaFinalFuncion = re.compile(r"^final_funcion\s*$")
 
-regexMientras = re.compile(r"^mientras\s*\([^()]+\)\s*([\s\S]*?)\s*final_mientras\s*$")
-regexRepetir = re.compile(r"^repetir\s*\([^,]+,[^,]+,[^,]+\)\s*([\s\S]*?)\s*final_repetir$")
-regexHacer = re.compile(r"^hacer\s*([\s\S]*?)\s*hasta\s*\([^()]+\)\s*;$")
-
-regexFuncion = re.compile(
-    rf"^funcion\s+{ident}\s*\([^()]*\)\s*([\s\S]*?)\s*retorno\s+.*;\s*final_funcion$"
-)
-
-patronToken = re.compile(r"""
-    (?P<COMENTARIO>//[^\n]*|\#[^\n]*)
-    |(?P<TEXTO>"[^"\n]*")
-    |(?P<DECIMAL>\d+\.\d+)
-    |(?P<ENTERO>\d+)
-    |(?P<RESERVADA_COMPUESTA>si_no|final_si|final_segun|final_mientras|final_repetir|final_funcion)
-    |(?P<IDENTIFICADOR>[a-z][a-z0-9]*)
-    |(?P<OPERADOR>==|!=|<=|>=|=|\+|-|\*|/|%|<|>)
-    |(?P<SIMBOLO>[();:])
-    |(?P<SALTO>\n)
-    |(?P<ESPACIO>[ \t\r]+)
-    |(?P<DESCONOCIDO>.)
+patronToken = re.compile(r""" (?P<TEXTO>"[^"\n]*")|(?P<IDENTIFICADOR_INVALIDO>\d+[a-z][a-z0-9]*)|(?P<DECIMAL>\d+\.\d+)|(?P<ENTERO>\d+)|(?P<RESERVADA_COMPUESTA>si_no|final_si|final_segun|final_mientras|final_repetir|final_funcion)
+    |(?P<IDENTIFICADOR>[a-z][a-z0-9]*)|(?P<OPERADOR>==|!=|<=|>=|=|\+|-|\*|/|%|<|>)|(?P<SIMBOLO>[();:])|(?P<SALTO>\n)
+    |(?P<ESPACIO>[ \t\r]+)|(?P<DESCONOCIDO>.)
 """, re.VERBOSE)
 
 @dataclass
@@ -74,13 +70,12 @@ def validar_linea(linea):
     if not linea:
         return True
 
-    palabrasBloque = {"si", "si_no", "final_si","segun", "caso", "defecto", "final_segun","mientras", "final_mientras",
-        "repetir", "final_repetir","hacer", "hasta","funcion", "retorno", "final_funcion"
-    }
+    patrones_bloque = [regexLineaSi, regexLineaSiNo, regexLineaFinalSi, regexLineaSegun, regexLineaCaso,
+        regexLineaDefecto, regexLineaFinalSegun, regexLineaMientras, regexLineaFinalMientras, regexLineaRepetir,
+        regexLineaFinalRepetir, regexLineaHacer, regexLineaHasta, regexLineaFuncion, regexLineaRetorno, regexLineaFinalFuncion,
+    ]
 
-    primera = linea.split()[0]
-
-    if primera in palabrasBloque:
+    if any(p.fullmatch(linea) for p in patrones_bloque):
         return True
 
     patrones = [regexDec,regexAsig,regexMostrar,regexPedir]
@@ -113,7 +108,11 @@ def analizador_lexico(codigo):
         if tipo == "SALTO":
             linea_actual += 1
             continue
-        if tipo in ("ESPACIO", "COMENTARIO"):
+        if tipo in ("ESPACIO"):
+            continue
+        if tipo == "IDENTIFICADOR_INVALIDO":
+            errores.append(Error(e, f"Identificador invalido: {lexema}. No cumple con las reglas", linea_actual))
+            e += 1
             continue
         if tipo == "DESCONOCIDO":
             errores.append(Error(e, f"Caracter invalido: {lexema}", linea_actual))
