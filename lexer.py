@@ -3,17 +3,17 @@ from dataclasses import dataclass
 
 palabrasReserv = {"definir","asignar","entero","decimal","texto","booleano","nulo","mostrar","pedir","si","entonces","si_no","final_si",
     "segun","caso","defecto","final_segun","mientras","final_mientras","repetir","final_repetir","hacer","hasta",
-    "funcion","retorno","final_funcion","verdadero","falso","y","o","no"
+    "funcion","función","retorno","final_funcion","verdadero","falso","y","o","no"
 }
 
 tokensReserv = {palabra: f"TOKEN_{palabra.upper()}" for palabra in palabrasReserv}
 
-operadores = {"==": "TOKEN_IGUALDAD","!=": "TOKEN_DIFERENTE","<=": "TOKEN_MENOR_IGUAL",">=": "TOKEN_MAYOR_IGUAL",
+operadores = {"++": "TOKEN_INCREMENTO","--": "TOKEN_DECREMENTO","==": "TOKEN_IGUALDAD","!=": "TOKEN_DIFERENTE","<=": "TOKEN_MENOR_IGUAL",">=": "TOKEN_MAYOR_IGUAL",
     "=": "TOKEN_IGUAL_ASIG","+": "TOKEN_SUMA","-": "TOKEN_RESTA","*": "TOKEN_MULT","/": "TOKEN_DIV","%": "TOKEN_MOD","<": "TOKEN_MENOR",
     ">": "TOKEN_MAYOR"
 }
 
-simbolos = {"(": "T_PARENTESIS_ABRE",")": "T_PARENTESIS_CIERRE",";": "T_PUNTO_COMA",":": "T_DOS_PUNTOS"}
+simbolos = {"(": "T_PARENTESIS_ABRE",")": "T_PARENTESIS_CIERRE",";": "T_PUNTO_COMA",":": "T_DOS_PUNTOS",",": "T_COMA"}
 
 ident = r"[a-z][a-z0-9]*"
 
@@ -35,8 +35,8 @@ regexHacer = re.compile(r"^hacer\s*([\s\S]*?)\s*hasta\s*\([^()]+\)\s*;$")
 regexFuncion = re.compile(rf"^funcion\s+{ident}\s*\([^()]*\)\s*([\s\S]*?)\s*retorno\s+.*;\s*final_funcion$")
 
 patronToken = re.compile(r""" (?P<TEXTO>"[^"\n]*")|(?P<TEXTO_INCOMPLETO>"[^"\n]*(?=$|\n))|(?P<COMILLA_SUELTA>")|(?P<IDENTIFICADOR_INVALIDO>\d+[a-z][a-z0-9]*)
-    |(?P<DECIMAL>\d+\.\d+)|(?P<ENTERO>\d+)|(?P<RESERVADA_COMPUESTA>si_no|final_si|final_segun|final_mientras|final_repetir|final_funcion)
-    |(?P<IDENTIFICADOR>[a-z][a-z0-9]*)|(?P<OPERADOR>==|!=|<=|>=|=|\+|-|\*|/|%|<|>)|(?P<SIMBOLO>[();:])|(?P<SALTO>\n)
+    |(?P<DECIMAL>\d+\.\d+)|(?P<ENTERO>\d+)|(?P<RESERVADA_COMPUESTA>si_no|final_si|final_segun|final_mientras|final_repetir|final_funcion|función)
+    |(?P<IDENTIFICADOR>[a-z][a-z0-9]*)|(?P<OPERADOR>\+\+|--|==|!=|<=|>=|=|\+|-|\*|/|%|<|>)|(?P<SIMBOLO>[();:,])|(?P<SALTO>\n)
     |(?P<ESPACIO>[ \t\r]+)|(?P<DESCONOCIDO>.)
 """, re.VERBOSE)
 
