@@ -5,11 +5,12 @@ from typing import Dict, Iterable, List, Optional
 @dataclass
 class SymbolEntry:
     token: str
-    lexema: str
+    orden: int
+    estructura: str
     tipo_dato: str
     linea: int
-    alcance: str
-    estructura: str
+    lexema: str
+    alcance: str = "global"
     valor: str = ""
     categoria: str = "variable"
 
@@ -18,6 +19,7 @@ class SymbolEntry:
 class SymbolTable:
     entries: List[SymbolEntry] = field(default_factory=list)
     scopes: List[str] = field(default_factory=lambda: ["global"])
+    _counter: int = 1
 
     @property
     def current_scope(self) -> str:
@@ -42,20 +44,29 @@ class SymbolTable:
     ) -> SymbolEntry:
         entry = SymbolEntry(
             token=token,
-            lexema=lexema,
+            orden=self._counter,
+            estructura=estructura,
             tipo_dato=tipo_dato,
             linea=linea,
+            lexema=lexema,
             alcance=self.current_scope,
-            estructura=estructura,
             valor=valor,
             categoria=categoria,
         )
         self.entries.append(entry)
+        self._counter += 1
         return entry
 
     def find(self, lexema: str) -> Optional[SymbolEntry]:
         for entry in reversed(self.entries):
             if entry.lexema == lexema:
+                return entry
+        return None
+
+    def find_in_current_scope(self, lexema: str) -> Optional[SymbolEntry]:
+        scope = self.current_scope
+        for entry in reversed(self.entries):
+            if entry.lexema == lexema and entry.alcance == scope:
                 return entry
         return None
 

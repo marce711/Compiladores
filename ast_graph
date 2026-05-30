@@ -1,0 +1,22 @@
+// Arbol Sintactico
+digraph {
+	graph [rankdir=TB splines=ortho]
+	node [color="#7C3AED" fillcolor="#EDE9FE" fontname=Arial shape=box style="rounded,filled"]
+	edge [color="#475569"]
+	2699856449552 [label=<Programa>]
+	2699854442448 [label="<Declaracion>
+L:1"]
+	2699856449552 -> 2699854442448
+	2699856531696 [label="<Tipo>
+entero
+L:1"]
+	2699854442448 -> 2699856531696
+	2699856532000 [label="<Identificador>
+numero1
+L:1"]
+	2699854442448 -> 2699856532000
+	2699854442768 [label="<Valor>
+1
+L:1"]
+	2699854442448 -> 2699854442768
+}

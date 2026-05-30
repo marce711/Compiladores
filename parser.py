@@ -4,7 +4,7 @@ from typing import Iterable, List, Optional, Sequence, Set
 from ast_tree import ASTNode
 from semantic import SemanticAnalyzer, SemanticError
 from symbol_table import SymbolTable
-from utils import BLOCK_ENDERS, STATEMENT_STARTERS, TIPOS_DATO, infer_literal_type, token_text
+from utils import BLOCK_ENDERS, STATEMENT_STARTERS, TIPOS_DATO, token_text
 
 
 @dataclass
@@ -27,7 +27,7 @@ class Parser:
         "TOKEN_DIFERENTE",
     }
     ARIT_OPS = {"TOKEN_SUMA", "TOKEN_RESTA", "TOKEN_MULT", "TOKEN_DIV", "TOKEN_MOD"}
-    VALUE_TOKENS = {"TOKEN_TEXTO", "TOKEN_NUM", "TOKEN_DECIMAL", "TOKEN_VERDADERO", "TOKEN_FALSO"}
+    VALUE_TOKENS = {"TOKEN_TEXTO", "TOKEN_NUM", "TOKEN_DECIMAL", "TOKEN_VERDADERO", "TOKEN_FALSO", "TOKEN_NULO"}
 
     def __init__(self, tokens: Sequence):
         self.tokens = list(tokens)
@@ -66,6 +66,7 @@ class Parser:
         token = self.current()
         if token is None:
             return None
+        
         if token.lexema == "definir":
             return self.parse_declaration()
         if token.lexema == "asignar":
@@ -86,16 +87,42 @@ class Parser:
             return self.parse_do_until()
         if token.lexema in {"funcion", "función"}:
             return self.parse_function()
-        if token.token == "TOKEN_ID" and self.peek_lexeme() in TIPOS_DATO:
-            self.error(
-                "Se esperaba palabra reservada definir",
-                "Corrige la palabra inicial por 'definir'.",
-                token,
-            )
-            self.synchronize(set())
-            return None
+
         if token.token == "TOKEN_ID":
-            return self.parse_arithmetic()
+            
+            if self.peek_lexeme() in TIPOS_DATO:
+                self.error(
+                    f"Instruccion invalida: '{token.lexema}'",
+                    "Se esperaba la palabra reservada 'definir' antes del tipo.",
+                    token,
+                )
+                self.synchronize(set())
+                return None
+            
+            
+            keywords = {"definir", "asignar", "mostrar", "pedir", "si", "segun", "mientras", "repetir", "hacer", "funcion"}
+            for kw in keywords:
+                if token.lexema.startswith(kw[:4]) and len(token.lexema) <= len(kw) + 3:
+                    self.error(
+                        f"Instruccion no reconocida: '{token.lexema}'",
+                        f"¿Quisiste decir '{kw}'?",
+                        token,
+                    )
+                    self.advance()
+                    return None
+
+            if self.peek_token() == "TOKEN_IGUAL_ASIG":
+                self.error(
+                    f"Asignacion directa detectada: '{token.lexema}='",
+                    "Usa la palabra reservada 'asignar' para realizar asignaciones.",
+                    token,
+                )
+                self.synchronize(set())
+                return None
+
+            if self.peek_token() in self.ARIT_OPS:
+                return self.parse_arithmetic()
+
         self.error(
             f"Instruccion no valida: {token.lexema}",
             "Usa una instruccion valida: definir, asignar, mostrar, pedir, si, segun, mientras, repetir, hacer o funcion.",
@@ -104,21 +131,26 @@ class Parser:
         self.advance()
         return None
 
+    def peek_token(self, offset: int = 1) -> str:
+        index = self.pos + offset
+        if index >= len(self.tokens):
+            return ""
+        return self.tokens[index].token
+
     def parse_declaration(self) -> ASTNode:
         start = self.expect_lexeme("definir", "Se esperaba palabra reservada definir", "Escribe 'definir' al iniciar una declaracion.")
         node = ASTNode("Declaracion", line=self.line_of(start))
         tipo = self.expect_type()
         ident = self.expect_token("TOKEN_ID", "Se esperaba identificador", "El identificador debe iniciar con minuscula y no usar guion bajo.")
         value_node = None
-        value_text = ""
+        value = None
         if self.match_token("TOKEN_IGUAL_ASIG"):
             value = self.parse_value()
             if value:
                 value_node = ASTNode("Valor", value.lexema, value.linea)
-                value_text = value.lexema
         self.expect_token("T_PUNTO_COMA", 'Se esperaba ";"', "Agrega punto y coma al final de la declaracion.")
         if tipo and ident:
-            self.symbols.add(ident.token, ident.lexema, tipo.lexema, ident.linea, "declaracion", value_text, "variable")
+            self.semantic.declare_identifier(ident.token, ident.lexema, tipo.lexema, ident.linea, "declaracion", value, "variable")
             node.extend([ASTNode("Tipo", tipo.lexema, tipo.linea), ASTNode("Identificador", ident.lexema, ident.linea)])
         node.add(value_node)
         return node
@@ -131,7 +163,10 @@ class Parser:
         value = self.parse_value()
         self.expect_token("T_PUNTO_COMA", 'Se esperaba ";"', "Agrega punto y coma al final de la asignacion.")
         if ident:
-            self.semantic.require_identifier(ident.lexema, ident.linea)
+            if value:
+                self.semantic.assign_identifier(ident, value)
+            else:
+                self.semantic.require_identifier(ident.lexema, ident.linea)
             node.add(ASTNode("Identificador", ident.lexema, ident.linea))
         if value:
             node.add(ASTNode("Valor", value.lexema, value.linea))
@@ -271,7 +306,7 @@ class Parser:
         node = ASTNode("Funcion", line=self.line_of(start))
         name = self.expect_token("TOKEN_ID", "Se esperaba identificador", "La funcion necesita un nombre valido.")
         if name:
-            self.symbols.add(name.token, name.lexema, "funcion", name.linea, "funcion", "", "funcion")
+            self.semantic.declare_identifier(name.token, name.lexema, "funcion", name.linea, "funcion", None, "funcion")
             node.add(ASTNode("Nombre", name.lexema, name.linea))
             self.symbols.push_scope(f"funcion:{name.lexema}")
         else:
@@ -279,7 +314,7 @@ class Parser:
         self.expect_token("T_PARENTESIS_ABRE", 'Se esperaba "("', "Abre parentesis para los parametros.")
         if self.check_token("TOKEN_ID"):
             param = self.advance()
-            self.symbols.add(param.token, param.lexema, "parametro", param.linea, "funcion", "", "parametro")
+            self.semantic.declare_identifier(param.token, param.lexema, "parametro", param.linea, "funcion", None, "parametro")
             node.add(ASTNode("Parametro", param.lexema, param.linea))
         self.expect_token("T_PARENTESIS_CIERRE", 'Se esperaba ")"', "Cierra parentesis de parametros.")
         body = ASTNode("Instrucciones")
@@ -304,7 +339,7 @@ class Parser:
         number = self.expect_any_token({"TOKEN_NUM", "TOKEN_DECIMAL"}, "Se esperaba numero", "Las operaciones aritmeticas de esta gramatica usan numeros.")
         self.expect_token("T_PUNTO_COMA", 'Se esperaba ";"', "Agrega punto y coma al final de la operacion.")
         if ident:
-            self.semantic.require_identifier(ident.lexema, ident.linea)
+            self.semantic.check_numeric_identifier(ident)
             node.add(ASTNode("Identificador", ident.lexema, ident.linea))
         if op:
             node.add(ASTNode("Operador", op.lexema, op.linea))
@@ -319,7 +354,7 @@ class Parser:
         self.expect_token("TOKEN_IGUAL_ASIG", 'Se esperaba "="', "Inicializa el contador con '='.")
         number = self.expect_token("TOKEN_NUM", "Se esperaba numero", "El contador debe iniciar con un numero entero.")
         if ident:
-            self.symbols.add(ident.token, ident.lexema, "entero", ident.linea, "repetir", number.lexema if number else "", "contador")
+            self.semantic.declare_identifier(ident.token, ident.lexema, "entero", ident.linea, "repetir", number, "contador")
             node.add(ASTNode("Identificador", ident.lexema, ident.linea))
         if tipo:
             node.add(ASTNode("Tipo", tipo.lexema, tipo.linea))
@@ -350,7 +385,10 @@ class Parser:
         op = self.expect_any_token(self.COND_OPS, "Se esperaba operador condicional", "Usa <, >, =, <=, >=, == o !=.")
         value = self.parse_value()
         if ident:
-            self.semantic.require_identifier(ident.lexema, ident.linea)
+            if op and value:
+                self.semantic.check_condition(ident, op, value)
+            else:
+                self.semantic.require_identifier(ident.lexema, ident.linea)
             node.add(ASTNode("Identificador", ident.lexema, ident.linea))
         if op:
             node.add(ASTNode("Operador", op.lexema, op.linea))
